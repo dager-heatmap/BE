@@ -1,24 +1,29 @@
 const axios = require("axios");
 
-const KAKAO_API_KEY = "KakaoAK 64305d8e302b503142552e8d814bf56a"; // 반드시 REST API 키
+const NAVER_CLIENT_ID = "f0a5l6s8em";
+const NAVER_CLIENT_SECRET = "B88PpCSX8eMEZ6JgfJ5p5tG9dHRNtCnNK1b9W3JP";
 
 async function getCoordsFromAddress(address) {
   try {
-    const url = "https://dapi.kakao.com/v2/local/search/address.json";
+    const url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode";
     console.log(`🔍 요청 중: ${url}?query=${encodeURIComponent(address)}`);
 
     const res = await axios.get(url, {
       params: { query: address },
-      headers: { Authorization: KAKAO_API_KEY }
+      headers: {
+        "X-NCP-APIGW-API-KEY-ID": NAVER_CLIENT_ID,
+        "X-NCP-APIGW-API-KEY": NAVER_CLIENT_SECRET
+      }
     });
 
-    // 성공 but 주소 없음
-    if (res.data.documents.length === 0) {
+    const addresses = res.data.addresses;
+
+    if (addresses.length === 0) {
       console.warn(`⚠️ '${address}' → 결과 없음`);
       return null;
     }
 
-    const { x, y } = res.data.documents[0].address;
+    const { y, x } = addresses[0]; // 위도(y), 경도(x)
     console.log(`✅ '${address}' → 위도: ${y}, 경도: ${x}`);
     return [parseFloat(y), parseFloat(x)];
 

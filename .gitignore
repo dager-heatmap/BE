@@ -1,3 +1,5 @@
+services/*.js
+
 # Logs
 logs
 *.log
