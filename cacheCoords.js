@@ -1,7 +1,9 @@
-// ✅ cacheCoords.js
+// cacheCoords.js
 const fs = require("fs");
 const path = require("path");
-const getCoordsFromAddress = require("./services/geocode"); // 네이버 API 기반
+const getCoordsFromAddress = require("./services/geocode");
+const getRouteCoords = require("./services/getRouteCoords");
+
 const inputPath = path.join(__dirname, "data", "danger.json");
 const outputPath = path.join(__dirname, "data", "danger_zones_cache.json");
 
@@ -13,8 +15,8 @@ async function main() {
     const base = `${item.시도} ${item.시군구}`;
     const startAddress = item["시작구간(주소)"] ? `${base} ${item["시작구간(주소)"]}` : null;
     const endAddress = `${base} ${item["끝구간(주소)"]}`;
-
-    console.log(`🔍 변환 중: ${item["연번"]}`);
+    const reason = item["선정사유"];
+    const length = item["연장(m)"];
 
     try {
       if (startAddress) {
@@ -22,13 +24,18 @@ async function main() {
         const end = await getCoordsFromAddress(endAddress);
 
         if (start && end) {
-          result.push({
-            name: item["연번"],
-            type: "polyline",
-            coords: [start, end],
-            reason: item["선정사유"],
-            length: item["연장(m)"]
-          });
+          const path = await getRouteCoords(start, end); // 도로 경로
+          if (path) {
+            result.push({
+              name: item["연번"],
+              type: "polyline",
+              coords: [start, end],
+              reason: item["선정사유"],
+              length: item["연장(m)"],
+              address: `${endAddress}` // ✅ 추가
+            });
+            
+          }
         }
       } else {
         const coord = await getCoordsFromAddress(endAddress);
@@ -37,18 +44,18 @@ async function main() {
             name: item["연번"],
             type: "point",
             coords: coord,
-            reason: item["선정사유"],
-            length: item["연장(m)"]
+            reason,
+            length
           });
         }
       }
-    } catch (err) {
-      console.error(`❌ 실패: ${item["연번"]}번 구간`);
+    } catch (e) {
+      console.error(`❌ ${item["연번"]} 처리 실패:`, e.message);
     }
   }
 
   fs.writeFileSync(outputPath, JSON.stringify(result, null, 2));
-  console.log(`✅ 저장 완료: ${outputPath}`);
+  console.log("✅ danger_zones_cache.json 생성 완료!");
 }
 
 main();
