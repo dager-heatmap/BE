@@ -6,122 +6,43 @@ const getCoordsFromAddress = require("./services/geocode");
 const getRoadPath = require("./services/directions");
 
 const app = express();
+app.use(cors());
+app.use(express.json());
 
-// ✅ CORS 설정
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-app.options("*", cors()); // preflight 응답
+// ✅ 정적 파일 제공 (optional)
+app.use(express.static("public"));
 
-// ✅ 캐싱된 데이터 로드
+// ✅ 데이터 불러오기
 const rawData = JSON.parse(
   fs.readFileSync(path.join(__dirname, "data", "danger_zones_cache.json"), "utf-8")
 );
 
-// ✅ 위험지역 전체 API
+// ✅ 메인 API
 app.get("/api/danger-zones", async (req, res) => {
-  const zones = [];
-
-  for (const item of rawData) {
-    const base = `${item.시도} ${item.시군구}`;
-    const startAddress = item["시작구간(주소)"] ? `${base} ${item["시작구간(주소)"]}` : null;
-    const endAddress = `${base} ${item["끝구간(주소)"]}`;
-
-    try {
-      if (startAddress) {
-        const start = await getCoordsFromAddress(startAddress);
-        const end = await getCoordsFromAddress(endAddress);
-
-        if (start && end) {
-          const path = await getRoadPath(start, end);
-          if (path) {
-            zones.push({
-              name: item["연번"],
-              type: "polyline",
-              coords: path,
-              reason: item["선정사유"],
-              length: item["연장(m)"]
-            });
-          }
-        }
-      } else {
-        const coord = await getCoordsFromAddress(endAddress);
-        if (coord) {
-          zones.push({
-            name: item["연번"],
-            type: "point",
-            coords: coord,
-            reason: item["선정사유"],
-            length: item["연장(m)"]
-          });
-        }
-      }
-    } catch (e) {
-      console.error(`❌ [${item["연번"]}] 처리 실패: ${e.message}`);
-    }
-  }
-
-  res.json(zones);
+  res.json(rawData);
 });
 
-// ✅ 위험지역 검색 API
+// ✅ 검색 API
 app.get("/api/danger-zones/search", async (req, res) => {
   const query = (req.query.q || "").trim();
   if (!query) return res.json([]);
 
-  const results = [];
+  const filtered = rawData.filter(item =>
+    [item["시작구간(주소)"], item["끝구간(주소)"], item["선정사유"]]
+      .filter(Boolean).join(" ")
+      .includes(query)
+  );
 
-  for (const item of rawData) {
-    const combined = [
-      item["시작구간(주소)"],
-      item["끝구간(주소)"],
-      item["선정사유"]
-    ].filter(Boolean).join(" ");
+  res.json(filtered);
+});
 
-    if (!combined.includes(query)) continue;
-
-    const base = `${item.시도} ${item.시군구}`;
-    const startAddress = item["시작구간(주소)"] ? `${base} ${item["시작구간(주소)"]}` : null;
-    const endAddress = `${base} ${item["끝구간(주소)"]}`;
-
-    try {
-      if (startAddress) {
-        const start = await getCoordsFromAddress(startAddress);
-        const end = await getCoordsFromAddress(endAddress);
-        const path = await getRoadPath(start, end);
-        if (path) {
-          results.push({
-            name: item["연번"],
-            type: "polyline",
-            coords: path,
-            reason: item["선정사유"],
-            length: item["연장(m)"]
-          });
-        }
-      } else {
-        const coord = await getCoordsFromAddress(endAddress);
-        if (coord) {
-          results.push({
-            name: item["연번"],
-            type: "point",
-            coords: coord,
-            reason: item["선정사유"],
-            length: item["연장(m)"]
-          });
-        }
-      }
-    } catch (e) {
-      console.warn(`❌ 검색 중 오류 (${item["연번"]}): ${e.message}`);
-    }
-  }
-
-  res.json(results);
+// ✅ 기본 페이지
+app.get("/", (req, res) => {
+  res.send("서울 위험지도 API 서버가 실행 중입니다.");
 });
 
 // ✅ 서버 실행
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ 서버 실행됨: http://localhost:${PORT}/api/danger-zones`);
+  console.log(`✅ 서버 실행됨: http://localhost:${PORT}`);
 });
