@@ -32,7 +32,7 @@ async function main() {
               coords: [start, end],
               reason: item["선정사유"],
               length: item["연장(m)"],
-              address: `${endAddress}` // ✅ 추가
+              address: `${startAddress} ~ ${endAddress}` // ✅ 추가
             });
             
           }
