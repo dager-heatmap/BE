@@ -24,33 +24,42 @@ app.get("/api/danger-zones", async (req, res) => {
   for (const zone of rawData) {
     const { name, type, coords, reason, length, address } = zone;
 
-    // polyline이면 도로 경로 요청
     if (type === "polyline" && coords.length === 2) {
       const [start, end] = coords;
 
       try {
         const route = await getRouteCoords(start, end);
-        if (route) {
-          results.push({
-            name,
-            type,
-            coords: route, // 🔁 경로로 대체
-            reason,
-            length,
-            address
-          });
-        }
+
+        results.push({
+          name,
+          type,
+          coords: route && route.length > 0 ? route : [start, end],  // ✅ 경로 없으면 fallback
+          reason,
+          length,
+          address
+        });
       } catch (e) {
-        console.warn(`❌ 경로 요청 실패 (zone ${name}): ${e.message}`);
+        console.warn(`❌ 경로 요청 예외 (zone ${name}): ${e.message}`);
+        // ✅ 예외 발생 시에도 fallback 사용
+        results.push({
+          name,
+          type,
+          coords: [start, end],
+          reason,
+          length,
+          address
+        });
       }
+
     } else {
-      // point는 그대로
+      // ✅ point 그대로
       results.push(zone);
     }
   }
 
   res.json(results);
 });
+
 
 // ✅ 검색 API
 app.get("/api/danger-zones/search", (req, res) => {

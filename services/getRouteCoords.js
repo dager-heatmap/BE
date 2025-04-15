@@ -24,7 +24,7 @@ async function getRouteCoords(start, end) {
     const path = res.data.route.trafast[0].path;
     return path.map(([lng, lat]) => [lat, lng]);
   } catch (e) {
-    console.error("🚨 도로 경로 요청 실패:", e.response?.data || e.message);
+    //console.error("🚨 도로 경로 요청 실패:", e.response?.data || e.message);
     return null;
   }
 }
