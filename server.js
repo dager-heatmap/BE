@@ -29,18 +29,16 @@ app.get("/api/danger-zones", async (req, res) => {
 
       try {
         const route = await getRouteCoords(start, end);
-
         results.push({
           name,
           type,
-          coords: route && route.length > 0 ? route : [start, end],  // ✅ 경로 없으면 fallback
+          coords: route && route.length > 0 ? route : [start, end],  // ✅ fallback
           reason,
           length,
           address
         });
       } catch (e) {
-        console.warn(`❌ 경로 요청 예외 (zone ${name}): ${e.message}`);
-        // ✅ 예외 발생 시에도 fallback 사용
+        console.warn(`❌ 경로 요청 실패 (zone ${name}): ${e.message}`);
         results.push({
           name,
           type,
@@ -52,12 +50,11 @@ app.get("/api/danger-zones", async (req, res) => {
       }
 
     } else {
-      // ✅ point 그대로
-      results.push(zone);
+      results.push(zone); // point는 그대로
     }
   }
 
-  res.json(results);
+  res.json(results); // ✅ 한 번만 응답
 });
 
 
