@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const getRouteCoords = require("./services/getRouteCoords"); // 도로 경로 불러오는 함수
+
 
 const app = express();
 app.use(cors());
@@ -16,8 +18,38 @@ const rawData = JSON.parse(
 );
 
 // ✅ 위험지역 전체 조회 API
-app.get("/api/danger-zones", (req, res) => {
-  res.json(rawData); // 🔥 여기서 변환 없이 바로 응답
+app.get("/api/danger-zones", async (req, res) => {
+  const results = [];
+
+  for (const zone of rawData) {
+    const { name, type, coords, reason, length, address } = zone;
+
+    // polyline이면 도로 경로 요청
+    if (type === "polyline" && coords.length === 2) {
+      const [start, end] = coords;
+
+      try {
+        const route = await getRouteCoords(start, end);
+        if (route) {
+          results.push({
+            name,
+            type,
+            coords: route, // 🔁 경로로 대체
+            reason,
+            length,
+            address
+          });
+        }
+      } catch (e) {
+        console.warn(`❌ 경로 요청 실패 (zone ${name}): ${e.message}`);
+      }
+    } else {
+      // point는 그대로
+      results.push(zone);
+    }
+  }
+
+  res.json(results);
 });
 
 // ✅ 검색 API
