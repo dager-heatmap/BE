@@ -27,9 +27,10 @@ router.get('/api/sinkhole-list', async (req, res) => {
             const parsed = JSON.parse(body);
             const resultCode = parsed?.response?.header?.resultCode;
             const resultMsg = parsed?.response?.header?.resultMsg;
-            const items = parsed?.response?.body?.items?.item || [];
+            const items = data.response.body.items || [];
             const totalCount = parsed?.response?.body?.totalCount || 0;
 
+            //console.log("받아온 건수:", items.length);
             if (parseInt(resultCode) !== 0) {
               return reject({ error: `공공 API 오류: ${resultMsg}`, raw: parsed });
             }
