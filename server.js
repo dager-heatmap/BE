@@ -1,3 +1,4 @@
+const sinkholeRouter = require('./sinkhole_data.js');
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -8,6 +9,7 @@ const getRouteCoords = require("./services/getRouteCoords"); // 도로 경로 �
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/', sinkholeRouter);
 
 // ✅ 정적 파일 제공
 app.use(express.static("public"));
@@ -83,3 +85,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ 서버 실행됨: http://localhost:${PORT}`);
 });
+
