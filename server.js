@@ -14,7 +14,7 @@ app.use(express.static("public"));
 
 // ✅ 캐시된 데이터 로드
 const rawData = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "data", "danger_zones_cache.json"), "utf-8")
+  fs.readFileSync(path.join(__dirname, "data", "danger_zones_coord.json"), "utf-8")
 );
 
 // ✅ 위험지역 전체 조회 API
